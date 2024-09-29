@@ -6,6 +6,8 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.js";
 import dashboardRoutes from "./routes/dashboard.js";
 import tripRoutes from "./routes/tripRoutes.js"; 
+import { Server } from "socket.io";
+import http from "http"; 
 
 dotenv.config();
 
@@ -34,7 +36,31 @@ mongoose
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.log("MongoDB connection error:", err));
 
-// Start the server
-app.listen(PORT, () => {
+// Create the HTTP server
+const server = http.createServer(app);
+
+// Create a Socket.io instance and attach it to the server
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST"], 
+    credentials: true, 
+  },
+});
+
+// Socket.io connection handler
+io.on("connection", (socket) => {
+  console.log("A user connected:", socket.id);
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+  });
+});
+
+
+export { io };
+
+// Start the server with Socket.io
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

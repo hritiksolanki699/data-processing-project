@@ -2,9 +2,10 @@ import Trip from "../models/Trip.js";
 import fs from "fs";
 import csv from "csv-parser";
 import path from "path";
-import { promisify } from "util"; 
+import { promisify } from "util";
+import { io } from "../server.js";
 const uploadsDir = path.resolve("uploads");
-const unlinkAsync = promisify(fs.unlink); 
+const unlinkAsync = promisify(fs.unlink);
 
 export const getTrips = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
@@ -14,9 +15,9 @@ export const getTrips = async (req, res) => {
     const trips = await Trip.find({})
       .skip((page - 1) * limit)
       .limit(limit);
-      
+
     const total = await Trip.countDocuments({});
-    
+
     res.json({
       trips,
       totalPages: Math.ceil(total / limit),
@@ -75,11 +76,9 @@ export const uploadCSV = async (req, res) => {
   try {
     // Save the file and return response immediately
     const filePath = path.join(uploadsDir, req.file.filename);
-    res
-      .status(200)
-      .json({
-        message: "File uploaded, processing will be done in the background.",
-      });
+    res.status(200).json({
+      message: "File uploaded, processing will be done in the background.",
+    });
 
     // Process the file in the background
     processCSVFile(filePath);
@@ -102,8 +101,16 @@ const processCSVFile = async (filePath) => {
           for (let i = 0; i < results.length; i += chunkSize) {
             const chunk = results.slice(i, i + chunkSize);
             await Trip.insertMany(chunk);
+
+            // Emit a real-time update after each chunk insertion
+            io.emit("csvChunkProcessed", {
+              message: `Inserted ${i + chunk.length} of ${
+                results.length
+              } records`,
+            });
           }
           console.log("Data successfully inserted into the database");
+          io.emit("csvProcessed", { message: "CSV processing complete" });
         } catch (err) {
           console.error("Error inserting data:", err);
         } finally {

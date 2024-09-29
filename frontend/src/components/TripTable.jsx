@@ -1,5 +1,9 @@
 import { useState, useEffect } from "react";
 import { getData } from "@/utils/axiosInstance";
+import io from "socket.io-client";
+
+// Connect to the Socket.io server
+const socket = io(process.env.NEXT_PUBLIC_BACKEND_BASE_URL);
 
 const TripTable = () => {
   const [tripData, setTripData] = useState([]);
@@ -17,7 +21,18 @@ const TripTable = () => {
         console.error("Error fetching trip data:", error);
       }
     };
+
     fetchTripData();
+
+    // Listen for real-time CSV processing updates
+    socket.on("csvChunkProcessed", () => {
+      console.log("CSV processing complete, updating data...");
+      fetchTripData(); 
+    });
+
+    return () => {
+      socket.off("csvChunkProcessed");
+    };
   }, [page]);
 
   // Filtered trip data based on search term
@@ -63,18 +78,14 @@ const TripTable = () => {
           {filteredData.map((trip) => (
             <tr key={trip._id} className="hover:bg-gray-100">
               <td className="border border-gray-300 p-2">{trip._id}</td>
-              <td className="border border-gray-300 p-2">
-                {trip.total_amount}
-              </td>
+              <td className="border border-gray-300 p-2">{trip.total_amount}</td>
               <td className="border border-gray-300 p-2">
                 {new Date(trip.lpep_pickup_datetime).toLocaleString()}
               </td>
               <td className="border border-gray-300 p-2">
                 {new Date(trip.lpep_dropoff_datetime).toLocaleString()}
               </td>
-              <td className="border border-gray-300 p-2">
-                {trip.passenger_count}
-              </td>
+              <td className="border border-gray-300 p-2">{trip.passenger_count}</td>
             </tr>
           ))}
         </tbody>

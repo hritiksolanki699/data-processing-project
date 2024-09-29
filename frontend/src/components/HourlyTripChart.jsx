@@ -1,23 +1,37 @@
-// components/HourlyTripChart.js
 import { useState, useEffect, useRef } from 'react';
 import Chart from 'chart.js/auto';
 import { getData } from '@/utils/axiosInstance';
+import io from 'socket.io-client';
+
+// Connect to the Socket.io server
+const socket = io(process.env.NEXT_PUBLIC_BACKEND_BASE_URL);
 
 const HourlyTripChart = () => {
   const [hourlyData, setHourlyData] = useState([]);
   const chartRef = useRef(null);
 
-  useEffect(() => {
-    const fetchHourlyTrips = async () => {
-      try {
-        const data = await getData('/trip/hourly'); 
-        setHourlyData(data);
-      } catch (error) {
-        console.error('Error fetching hourly trip data:', error);
-      }
-    };
+  const fetchHourlyTrips = async () => {
+    try {
+      const data = await getData('/trip/hourly'); 
+      setHourlyData(data);
+    } catch (error) {
+      console.error('Error fetching hourly trip data:', error);
+    }
+  };
 
-    fetchHourlyTrips();
+  useEffect(() => {
+    fetchHourlyTrips(); // Initial data fetch
+
+    // Listen for real-time CSV processing updates
+    socket.on('csvChunkProcessed', () => {
+      console.log('CSV processing complete, updating hourly chart...');
+      fetchHourlyTrips(); // Re-fetch the hourly trip data when CSV processing is done
+    });
+
+    return () => {
+      // Clean up the event listener when the component unmounts
+      socket.off('csvChunkProcessed');
+    };
   }, []);
 
   useEffect(() => {
@@ -67,7 +81,9 @@ const HourlyTripChart = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-4">
-      <h2 className="text-xl font-semibold text-center text-gray-800 mb-6">Hourly Trip Data Visualization</h2>
+      <h2 className="text-xl font-semibold text-center text-gray-800 mb-6">
+        Hourly Trip Data Visualization
+      </h2>
       <canvas id="hourlyChart" width="400" height="400"></canvas>
     </div>
   );
