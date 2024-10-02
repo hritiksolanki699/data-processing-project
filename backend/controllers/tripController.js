@@ -7,17 +7,42 @@ import { io } from "../server.js";
 const uploadsDir = path.resolve("uploads");
 const unlinkAsync = promisify(fs.unlink);
 
+import mongoose from "mongoose";
+
 export const getTrips = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 100;
+  const limit = parseInt(req.query.limit) || 20;
+  const searchTerm = req.query.search || "";
 
   try {
-    const trips = await Trip.find({})
+    let query = {};
+
+    // Check if the searchTerm is a valid ObjectId
+    if (searchTerm) {
+      query = {
+        $or: [
+          // If the search term is a valid ObjectId, use it for exact matching
+          ...(mongoose.Types.ObjectId.isValid(searchTerm)
+            ? [{ _id: searchTerm }]
+            : []),
+
+          // Otherwise, use regex for string fields (like total_amount)
+          ...(isNaN(searchTerm)
+            ? []
+            : [{ total_amount: parseFloat(searchTerm) }]),
+        ],
+      };
+    }
+
+    // Fetch filtered and paginated trips
+    const trips = await Trip.find(query)
       .skip((page - 1) * limit)
       .limit(limit);
 
-    const total = await Trip.countDocuments({});
+    // Get total number of documents for pagination
+    const total = await Trip.countDocuments(query);
 
+    // Send paginated data
     res.json({
       trips,
       totalPages: Math.ceil(total / limit),
@@ -67,6 +92,85 @@ export const getHourlyTrips = async (req, res) => {
     ]);
 
     res.json(hourlyTrips);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+export const averageFareByPickup = async (req, res) => {
+  try {
+    const aggregatedData = await Trip.aggregate([
+      {
+        $group: {
+          _id: "$PULocationID",
+          averageFare: { $avg: "$fare_amount" },
+        },
+      },
+      { $sort: { averageFare: -1 } },
+    ]);
+
+    res.json(aggregatedData);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+
+export const passengerCountDistribution = async (req, res) => {
+  try {
+    const passengerData = await Trip.aggregate([
+      {
+        $group: {
+          _id: "$passenger_count",
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    res.json(passengerData);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const paymentTypeBreakdown = async (req, res) => {
+  try {
+    const paymentData = await Trip.aggregate([
+      {
+        $group: {
+          _id: "$payment_type",
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { count: -1 } },
+    ]);
+
+    res.json(paymentData);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const fareBreakdown = async (req, res) => {
+  try {
+    const fareData = await Trip.aggregate([
+      {
+        $group: {
+          _id: "$PULocationID",
+          totalFare: { $sum: "$fare_amount" },
+          totalTolls: { $sum: "$tolls_amount" },
+          totalSurcharges: {
+            $sum: { $add: ["$tip_amount", "$improvement_surcharge"] },
+          },
+        },
+      },
+      { $sort: { totalFare: -1 } },
+    ]);
+
+    res.json(fareData);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

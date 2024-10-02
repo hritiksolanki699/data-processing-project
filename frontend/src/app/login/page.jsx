@@ -1,19 +1,26 @@
 "use client";
-import { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { loginUser } from '@/store/auth/authSlice';
-import { useRouter } from 'next/navigation';
-import { toast } from 'react-toastify'; 
+import { useEffect, useState } from "react";
+import { isAuthenticated } from "@/utils/auth";
+import { useDispatch, useSelector } from "react-redux";
+import { loginUser } from "@/store/auth/authSlice";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 
 export default function Login() {
   const dispatch = useDispatch();
   const router = useRouter();
   const { loading, error } = useSelector((state) => state.auth);
 
+  useEffect(() => {
+    if (isAuthenticated()) {
+      router.push("/dashboard");
+    }
+  }, [router]);
+
   const [formData, setFormData] = useState({
-    role: 'Admin',
-    loginIdentifier: '',
-    password: '',
+    role: "Admin",
+    loginIdentifier: "",
+    password: "",
   });
 
   const handleChange = (e) => {
@@ -26,25 +33,29 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const resultAction = await dispatch(loginUser(formData));
-  
+
     if (loginUser.fulfilled.match(resultAction)) {
-      toast.success('Login successful!');
-      router.push('/dashboard');
+      toast.success("Login successful!");
+      router.push("/dashboard");
     } else {
-      toast.error(resultAction.payload || 'Login failed. Please try again.');
+      toast.error(resultAction.payload || "Login failed. Please try again.");
     }
   };
-  
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
       <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
-        <h2 className="text-2xl font-bold mb-6 text-center text-gray-700">MapUp Login</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center text-gray-700">
+          MapUp Login
+        </h2>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           {/* Role Selector */}
           <div>
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="role"
+              className="block text-sm font-medium text-gray-700"
+            >
               Select Role
             </label>
             <select
@@ -62,7 +73,10 @@ export default function Login() {
 
           {/* Username/Email/Mobile */}
           <div>
-            <label htmlFor="loginIdentifier" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="loginIdentifier"
+              className="block text-sm font-medium text-gray-700"
+            >
               Email, Mobile, or Username
             </label>
             <input
@@ -78,7 +92,10 @@ export default function Login() {
 
           {/* Password */}
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700"
+            >
               Password
             </label>
             <input
@@ -99,7 +116,7 @@ export default function Login() {
               className="w-full bg-indigo-600 text-white py-2.5 rounded-lg shadow hover:bg-indigo-700 transition-all"
               disabled={loading}
             >
-              {loading ? 'Logging in...' : 'Login'}
+              {loading ? "Logging in..." : "Login"}
             </button>
           </div>
 

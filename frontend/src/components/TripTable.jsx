@@ -1,53 +1,91 @@
-import { useState, useEffect } from "react";
+"use client";
+import { useState, useEffect, useMemo } from "react";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  flexRender,
+} from "@tanstack/react-table";
 import { getData } from "@/utils/axiosInstance";
 import io from "socket.io-client";
 
-// Connect to the Socket.io server
+// Socket connection
 const socket = io(process.env.NEXT_PUBLIC_BACKEND_BASE_URL);
 
 const TripTable = () => {
   const [tripData, setTripData] = useState([]);
-  const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
+  const [pageIndex, setPageIndex] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Fetch trip data from backend
+  const fetchTripData = async (page = 1, search = "") => {
+    try {
+      const data = await getData(
+        `/trip?page=${page}&limit=20&search=${search}`
+      );
+      setTripData(data.trips);
+      setTotalPages(data.totalPages);
+    } catch (error) {
+      console.error("Error fetching trip data:", error);
+    }
+  };
+
   useEffect(() => {
-    const fetchTripData = async () => {
-      try {
-        const data = await getData(`/trip?page=${page}&limit=100`);
-        setTripData(data.trips);
-        setTotalPages(data.totalPages);
-      } catch (error) {
-        console.error("Error fetching trip data:", error);
-      }
-    };
+    fetchTripData(pageIndex + 1, searchTerm);
 
-    fetchTripData();
-
-    // Listen for real-time CSV processing updates
     socket.on("csvChunkProcessed", () => {
       console.log("CSV processing complete, updating data...");
-      fetchTripData(); 
+      fetchTripData(pageIndex + 1, searchTerm);
     });
 
     return () => {
       socket.off("csvChunkProcessed");
     };
-  }, [page]);
+  }, [pageIndex, searchTerm]);
 
-  // Filtered trip data based on search term
-  const filteredData = tripData.filter(
-    (trip) =>
-      trip._id.toString().includes(searchTerm) ||
-      trip.total_amount.toString().includes(searchTerm)
+  // Table columns definition
+  const columns = useMemo(
+    () => [
+      { accessorKey: "_id", header: "Trip ID" },
+      { accessorKey: "total_amount", header: "Total Amount" },
+      {
+        accessorKey: "lpep_pickup_datetime",
+        header: "Pickup Time",
+        cell: (info) => new Date(info.getValue()).toLocaleString(),
+      },
+      {
+        accessorKey: "lpep_dropoff_datetime",
+        header: "Dropoff Time",
+        cell: (info) => new Date(info.getValue()).toLocaleString(),
+      },
+      { accessorKey: "passenger_count", header: "Passenger Count" },
+    ],
+    []
   );
 
+  const table = useReactTable({
+    data: tripData,
+    columns,
+    pageCount: totalPages,
+    state: { pagination: { pageIndex, pageSize: 20 } },
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    manualPagination: true,
+  });
+
+  const { getHeaderGroups, getRowModel } = table;
+
   const handleNextPage = () => {
-    if (page < totalPages) setPage(page + 1);
+    if (pageIndex + 1 < totalPages) {
+      setPageIndex(pageIndex + 1);
+    }
   };
 
   const handlePreviousPage = () => {
-    if (page > 1) setPage(page - 1);
+    if (pageIndex > 0) {
+      setPageIndex(pageIndex - 1);
+    }
   };
 
   return (
@@ -66,26 +104,27 @@ const TripTable = () => {
 
       <table className="min-w-full border-collapse border border-gray-200">
         <thead>
-          <tr className="bg-gray-200">
-            <th className="border border-gray-300 p-2">Trip ID</th>
-            <th className="border border-gray-300 p-2">Total Amount</th>
-            <th className="border border-gray-300 p-2">Pickup Time</th>
-            <th className="border border-gray-300 p-2">Dropoff Time</th>
-            <th className="border border-gray-300 p-2">Passenger Count</th>
-          </tr>
+          {getHeaderGroups().map((headerGroup) => (
+            <tr key={headerGroup.id} className="bg-gray-200">
+              {headerGroup.headers.map((header) => (
+                <th key={header.id} className="border border-gray-300 p-2">
+                  {flexRender(
+                    header.column.columnDef.header,
+                    header.getContext()
+                  )}
+                </th>
+              ))}
+            </tr>
+          ))}
         </thead>
         <tbody>
-          {filteredData.map((trip) => (
-            <tr key={trip._id} className="hover:bg-gray-100">
-              <td className="border border-gray-300 p-2">{trip._id}</td>
-              <td className="border border-gray-300 p-2">{trip.total_amount}</td>
-              <td className="border border-gray-300 p-2">
-                {new Date(trip.lpep_pickup_datetime).toLocaleString()}
-              </td>
-              <td className="border border-gray-300 p-2">
-                {new Date(trip.lpep_dropoff_datetime).toLocaleString()}
-              </td>
-              <td className="border border-gray-300 p-2">{trip.passenger_count}</td>
+          {getRowModel().rows.map((row) => (
+            <tr key={row.id} className="hover:bg-gray-100">
+              {row.getVisibleCells().map((cell) => (
+                <td key={cell.id} className="border border-gray-300 p-2">
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </td>
+              ))}
             </tr>
           ))}
         </tbody>
@@ -94,17 +133,20 @@ const TripTable = () => {
       <div className="flex justify-center items-center mt-6 space-x-4">
         <button
           onClick={handlePreviousPage}
-          disabled={page === 1}
+          disabled={pageIndex === 0} // Disable if on the first page
           className="bg-blue-500 text-white px-4 py-2 rounded-md disabled:bg-gray-400"
         >
           Previous
         </button>
+
+        {/* Correct display for current page and total pages */}
         <span className="text-lg font-medium text-gray-700">
-          Page {page} of {totalPages}
+          Page {pageIndex + 1} of {totalPages}
         </span>
+
         <button
           onClick={handleNextPage}
-          disabled={page === totalPages}
+          disabled={pageIndex + 1 === totalPages} // Disable if on the last page
           className="bg-blue-500 text-white px-4 py-2 rounded-md disabled:bg-gray-400"
         >
           Next

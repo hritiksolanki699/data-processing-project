@@ -1,3 +1,5 @@
+"use client";
+
 // components/FileUpload.js
 import { useState, useRef } from "react";
 import { postData } from "@/utils/axiosInstance";

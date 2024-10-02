@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation"; // Import usePathname
+import Link from "next/link"; // Import Next.js Link
 import { FiMenu } from "react-icons/fi";
 import { toast } from "react-toastify";
 import { logoutUser } from "@/store/auth/authSlice";
@@ -11,12 +12,13 @@ import { isAuthenticated } from "@/utils/auth";
 export default function DashboardLayout({ children }) {
   const router = useRouter();
   const dispatch = useDispatch();
+  const pathname = usePathname(); // Get the current route
   const { role } = useSelector((state) => state.auth);
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setHydrated(true); 
+    setHydrated(true);
   }, []);
 
   useEffect(() => {
@@ -42,9 +44,13 @@ export default function DashboardLayout({ children }) {
   };
 
   if (!hydrated) {
-    // Show a loader or nothing while waiting for hydration
     return null;
   }
+
+  const linkClass = (path) =>
+    `block p-2.5 hover:bg-indigo-700 rounded-lg ${
+      pathname === path ? "bg-indigo-700" : ""
+    }`;
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
@@ -65,12 +71,15 @@ export default function DashboardLayout({ children }) {
           <h2 className="text-2xl font-bold mb-4">{role || "Admin"} Panel</h2>{" "}
           {/* User Role */}
           <nav className="space-y-2">
-            <a
-              href="/dashboard"
-              className="block p-2.5 hover:bg-indigo-700 rounded-lg"
-            >
+            <Link href="/dashboard" className={linkClass("/dashboard")}>
               Dashboard
-            </a>
+            </Link>
+            <Link href="/profile" className={linkClass("/profile")}>
+              Profile
+            </Link>
+            <Link href="/trips" className={linkClass("/trips")}>
+              Trips
+            </Link>
             <button
               onClick={handleLogout}
               className="w-full text-left block p-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all"
