@@ -17,7 +17,9 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    // origin: "http://localhost:3000",
+    origin:
+      "https://data-processing-front-git-main-hritiksolanki699s-projects.vercel.app",
     credentials: true,
   })
 );
@@ -48,7 +50,7 @@ const server = http.createServer(app);
 // Create a Socket.io instance and attach it to the server
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: "https://data-processing-front-git-main-hritiksolanki699s-projects.vercel.app",
     methods: ["GET", "POST"],
     credentials: true,
   },

@@ -9,6 +9,19 @@ const axiosInstance = axios.create({
   withCredentials: true,
 });
 
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token"); 
+    if (token) {
+      config.headers["Authorization"] = `Bearer ${token}`; 
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // Function to handle GET requests
 export const getData = async (url) => {
   try {
