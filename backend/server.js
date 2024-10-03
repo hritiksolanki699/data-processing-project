@@ -5,9 +5,9 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.js";
 import dashboardRoutes from "./routes/dashboard.js";
-import tripRoutes from "./routes/tripRoutes.js"; 
+import tripRoutes from "./routes/tripRoutes.js";
 import { Server } from "socket.io";
-import http from "http"; 
+import http from "http";
 
 dotenv.config();
 
@@ -15,18 +15,24 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors({
-  origin: 'http://localhost:3000', 
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+app.get("/", (req, res) => {
+  res.send("API is running");
+});
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/dashboard", dashboardRoutes);
-app.use("/api/trip", tripRoutes); 
+app.use("/api/trip", tripRoutes);
 
 // Database connection
 mongoose
@@ -43,8 +49,8 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: "http://localhost:3000",
-    methods: ["GET", "POST"], 
-    credentials: true, 
+    methods: ["GET", "POST"],
+    credentials: true,
   },
 });
 
@@ -56,7 +62,6 @@ io.on("connection", (socket) => {
     console.log("User disconnected:", socket.id);
   });
 });
-
 
 export { io };
 
