@@ -26,10 +26,6 @@ This project showcases a full-stack application developed using Node.js with Exp
 - [Express](https://expressjs.com/) - Fast, unopinionated, minimalist web framework for Node.js
 - [MongoDB](https://www.mongodb.com/) - NoSQL database for data storage
 
-# User Authentication in Frontend Application
-
-This application provides user authentication for three different roles: Admin, Manager, and Regular User. Below are the details for logging in with each role.
-
 ## Frontend URL
 
 You can access the application at the following URL:
