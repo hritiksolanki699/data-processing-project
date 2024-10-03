@@ -26,5 +26,48 @@ This project showcases a full-stack application developed using Node.js with Exp
 - [Express](https://expressjs.com/) - Fast, unopinionated, minimalist web framework for Node.js
 - [MongoDB](https://www.mongodb.com/) - NoSQL database for data storage
 
+# User Authentication in Frontend Application
+
+This application provides user authentication for three different roles: Admin, Manager, and Regular User. Below are the details for logging in with each role.
+
+## Frontend URL
+
+You can access the application at the following URL:
+
+[Login to the Application](https://data-processing-front-git-main-hritiksolanki699s-projects.vercel.app/login)
+
+## Login Credentials
+
+### 1. Admin User
+- **Username:** adminuser
+- **Password:** 12345678
+- **Email:** admin@example.com
+- **Mobile Number:** 1234567890
+- **Role:** Admin
+- **Address:** 123 Admin St, Admin City, Admin State, 12345
+
+### 2. Manager User
+- **Username:** manageruser
+- **Password:** 12345678
+- **Email:** manager@example.com
+- **Mobile Number:** 0987654321
+- **Role:** Manager
+- **Address:** 456 Manager St, Manager City, Manager State, 54321
+
+### 3. Regular User
+- **Username:** regularuser
+- **Password:** 12345678
+- **Email:** user@example.com
+- **Mobile Number:** 1122334455
+- **Role:** User
+- **Address:** 789 User St, User City, User State, 67890
+
+## Usage
+
+1. Open the [Login Page](https://data-processing-front-git-main-hritiksolanki699s-projects.vercel.app/login).
+2. Enter the username and password for the desired role.
+3. Click the login button to access the application.
+
+
 
 
